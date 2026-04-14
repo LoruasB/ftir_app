@@ -177,6 +177,19 @@ if files:
             file_name="resultados_ftir.csv",
             mime="text/csv"
         )
+        
+        txt = df_resultados.to_csv(
+            index=False,
+            sep='\t',
+            decimal='.'
+        ).encode('utf-8')
+
+        st.download_button(
+            label="📄 Baixar resultados (TXT)",
+            data=txt,
+            file_name="resultados_ftir.txt",
+            mime="text/plain"
+        )
 
     if st.button("Mostrar gráfico"):
 

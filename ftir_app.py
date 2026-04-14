@@ -4,7 +4,7 @@ import numpy as np
 from scipy.integrate import simpson
 import matplotlib.pyplot as plt
 
-
+ 
 st.set_page_config(page_title="FTIR - Área de Banda")
 
 st.title("🔬 Análise de FTIR (Múltiplos Arquivos)")
@@ -13,7 +13,7 @@ files = st.file_uploader(
     "Carregue seus arquivos CSV/TXT",
     type=["csv", "txt"],
     accept_multiple_files=True
-)
+) 
 
 delimiter = st.selectbox(
     "Selecione o separador de colunas do arquivo",

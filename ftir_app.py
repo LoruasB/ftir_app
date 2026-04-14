@@ -58,6 +58,16 @@ if files:
 
     converter = st.checkbox("Converter %T para absorbância")
 
+    st.subheader("Normalização do espectro")
+
+    normalizar = st.checkbox("Normalizar espectro")
+
+    if normalizar:
+        wn_ref = st.number_input(
+            "Número de onda para normalização (cm⁻¹)",
+            value=1700.0
+    )
+
     st.subheader("Correção de baseline")
 
     tipo_baseline = st.selectbox(
@@ -117,6 +127,17 @@ if files:
 
                 if converter:
                     absorb = -np.log10(absorb / 100)
+
+                if normalizar:
+                    # encontra o ponto mais próximo do wn_ref
+                    idx_ref = (np.abs(wn - wn_ref)).idxmin()
+
+                    ref_value = absorb.loc[idx_ref]
+
+                    if ref_value != 0:
+                        absorb = absorb / ref_value
+                    else:
+                        st.warning(f"{file.name}: valor de referência zero, não foi possível normalizar.")
 
                 if min_wn > max_wn:
                     min_wn, max_wn = max_wn, min_wn
@@ -213,8 +234,11 @@ if files:
             )
 
             ax.set_xlabel("Número de onda (cm⁻¹)")
-            ax.set_ylabel("Intensidade")
-            ax.legend()
+            if normalizar:
+                ax.set_ylabel("Intensidade normalizada")
+            else:
+                ax.set_ylabel("Intensidade")
+                ax.legend()
 
             st.subheader(f"Visualização: {arquivo_escolhido}")
             st.pyplot(fig)

@@ -4,6 +4,7 @@ import numpy as np
 from scipy.integrate import simpson
 import matplotlib.pyplot as plt
 
+ 
 st.set_page_config(page_title="FTIR - Área de Banda")
 
 st.title("🔬 Análise de FTIR (Múltiplos Arquivos)")
@@ -12,31 +13,13 @@ files = st.file_uploader(
     "Carregue seus arquivos CSV/TXT",
     type=["csv", "txt"],
     accept_multiple_files=True
-)
+) 
 
 delimiter = st.selectbox(
     "Selecione o separador de colunas do arquivo",
-    options=[(",", "Vírgula (,)"), ("\t", "Tabulação (Tab)"), (";", "Ponto e Vírgula (;)")],
+    options=[(",", "Vírgula (,)"), ("\t", "Tabulação (Tab)"), (";", "Ponto E Vírgula (;)")],
     format_func=lambda x: x[1]
 )[0]
-
-
-def baseline_als(y, lam=1e5, p=0.01, niter=10):
-    import numpy as np
-    from scipy import sparse
-    from scipy.sparse.linalg import spsolve
-
-    L = len(y)
-    D = sparse.diags([1, -2, 1], [0, -1, -2], shape=(L, L-2))
-    w = np.ones(L)
-
-    for i in range(niter):
-        W = sparse.spdiags(w, 0, L, L)
-        Z = W + lam * D.dot(D.transpose())
-        z = spsolve(Z, w * y)
-        w = p * (y > z) + (1 - p) * (y < z)
-
-    return z
 
 # Manter dados entre cliques
 if "dados_todos" not in st.session_state:
@@ -58,40 +41,16 @@ if files:
 
     converter = st.checkbox("Converter %T para absorbância")
 
-    st.subheader("Correção de baseline")
-
-    tipo_baseline = st.selectbox(
-        "Escolha o tipo de baseline",
-        ["Sem baseline", "Linear", "ALS"]
-    )
-
-    if tipo_baseline == "ALS":
-        col1, col2 = st.columns(2)
-
-        with col1:
-            lam = st.number_input(
-                "Lambda (suavidade)",
-                value=1e10,
-                format="%.1e",
-                step=1e10
-            )
-
-        with col2:
-            p = st.number_input(
-                "p (assimetria)",
-                value=0.01,
-                format="%.4f",
-                step=0.005
-            )
-
     resultados = []
 
     if st.button("Calcular áreas"):
 
+        # Limpa dados antigos
         st.session_state["dados_todos"] = {}
 
         for file in files:
             try:
+                # Leitura robusta
                 data = pd.read_csv(
                     file,
                     sep=delimiter,
@@ -111,13 +70,16 @@ if files:
                 wn = wn[mask_valid]
                 absorb = absorb[mask_valid]
 
+                # Garantir ordem crescente
                 if wn.iloc[0] > wn.iloc[-1]:
                     wn = wn[::-1]
                     absorb = absorb[::-1]
 
+                # Conversão
                 if converter:
                     absorb = -np.log10(absorb / 100)
 
+                # Corrigir intervalo 
                 if min_wn > max_wn:
                     min_wn, max_wn = max_wn, min_wn
 
@@ -126,22 +88,15 @@ if files:
                 abs_band = absorb[mask]
 
                 if len(wn_band) > 1:
+                    baseline = np.linspace(
+                        abs_band.iloc[0],
+                        abs_band.iloc[-1],
+                        len(abs_band)
+                    )
 
-                    if tipo_baseline == "Sem baseline":
-                        baseline = np.zeros_like(abs_band.values)
+                    abs_corr = abs_band - baseline
 
-                    elif tipo_baseline == "Linear":
-                        baseline = np.linspace(
-                            abs_band.iloc[0],
-                            abs_band.iloc[-1],
-                            len(abs_band)
-                        )
-
-                    elif tipo_baseline == "ALS":
-                        baseline = baseline_als(abs_band.values, lam=lam, p=p)
-
-                    abs_corr = abs_band.values - baseline
-                    area = abs(simpson(abs_corr, wn_band.values))
+                    area = abs(simpson(abs_corr, wn_band))
 
                     st.session_state["dados_todos"][file.name] = (
                         wn, absorb, wn_band, abs_band, baseline
@@ -178,6 +133,7 @@ if files:
             mime="text/csv"
         )
 
+    # Botão do gráfico
     if st.button("Mostrar gráfico"):
 
         if arquivo_escolhido in st.session_state["dados_todos"]:
@@ -187,13 +143,11 @@ if files:
             fig, ax = plt.subplots()
 
             ax.plot(wn, absorb, label="Espectro")
-
-            if tipo_baseline != "Sem baseline":
-                ax.plot(wn_band, baseline, '--', label=f"Baseline ({tipo_baseline})")
+            ax.plot(wn_band, baseline, '--', label="Baseline")
 
             ax.fill_between(
                 wn_band,
-                abs_band.values,
+                abs_band,
                 baseline,
                 alpha=0.3,
                 label="Área integrada"

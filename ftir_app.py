@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from scipy.integrate import simpson
+import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="FTIR - Área de Banda")
@@ -43,7 +44,6 @@ if "dados_todos" not in st.session_state:
     st.session_state["dados_todos"] = {}
 
 if files:
-
     nomes_arquivos = [file.name for file in files]
 
     arquivo_escolhido = st.selectbox(
@@ -217,31 +217,45 @@ if files:
         if arquivo_escolhido in st.session_state["dados_todos"]:
 
             wn, absorb, wn_band, abs_band, baseline = st.session_state["dados_todos"][arquivo_escolhido]
+            
+            fig = go.Figure()
+            # Espectro completo
+            fig.add_trace(go.Scatter(
+                x=wn,
+                y=absorb,
+                mode='lines',
+                name='Espectro'
+            ))
 
-            fig, ax = plt.subplots()
-
-            ax.plot(wn, absorb, label="Espectro")
-
+            # Baseline (se houver)
             if tipo_baseline != "Sem baseline":
-                ax.plot(wn_band, baseline, '--', label=f"Baseline ({tipo_baseline})")
+                fig.add_trace(go.Scatter(
+                    x=wn_band,
+                    y=baseline,
+                    mode='lines',
+                    name=f'Baseline ({tipo_baseline})',
+                    line=dict(dash='dash')
+                ))
 
-            ax.fill_between(
-                wn_band,
-                abs_band.values,
-                baseline,
-                alpha=0.3,
-                label="Área integrada"
+            # Área integrada (preenchimento)
+            fig.add_trace(go.Scatter(
+                x=wn_band,
+                y=abs_band,
+                mode='lines',
+                fill='tonexty',
+                name='Área integrada',
+                opacity=0.3
+            ))
+
+            # Layout
+            fig.update_layout(
+                xaxis_title="Número de onda (cm⁻¹)",
+                yaxis_title="Intensidade normalizada" if normalizar else "Intensidade",
+                xaxis=dict(autorange="reversed")  # 🔥 padrão FTIR
             )
 
-            ax.set_xlabel("Número de onda (cm⁻¹)")
-            if normalizar:
-                ax.set_ylabel("Intensidade normalizada")
-            else:
-                ax.set_ylabel("Intensidade")
-                ax.legend()
-
             st.subheader(f"Visualização: {arquivo_escolhido}")
-            st.pyplot(fig)
+            st.plotly_chart(fig, use_container_width=True)
 
         else:
             st.warning("Clique primeiro em 'Calcular áreas'")

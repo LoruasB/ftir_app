@@ -20,6 +20,7 @@ delimiter = st.selectbox(
     format_func=lambda x: x[1]
 )[0]
 
+
 def baseline_als(y, lam=1e5, p=0.01, niter=10):
     import numpy as np
     from scipy import sparse
@@ -70,15 +71,17 @@ if files:
         with col1:
             lam = st.number_input(
                 "Lambda (suavidade)",
-                value=10000000000.0,
-                format="%.1f"
+                value=1e10,
+                format="%.1e",
+                step=1e10
             )
 
         with col2:
             p = st.number_input(
                 "p (assimetria)",
                 value=0.01,
-                format="%.4f"
+                format="%.4f",
+                step=0.005
             )
 
     resultados = []

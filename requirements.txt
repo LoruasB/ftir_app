@@ -1,5 +1,8 @@
 streamlit
 pandas
 numpy
-matplotlib
 scipy
+matplotlib
+plotly
+openpyxl
+starlette<0.40.0

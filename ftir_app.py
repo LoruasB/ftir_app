@@ -209,19 +209,40 @@ if files:
             wn, absorb, wn_band, abs_band, baseline = st.session_state["dados_todos"][arquivo_escolhido]
             
             fig = go.Figure()
-            fig.add_trace(go.Scatter(x=wn, y=absorb, mode='lines', name='Espectro'))
+            
+            # 1. Espectro completo de fundo
+            fig.add_trace(go.Scatter(
+                x=wn, y=absorb, 
+                mode='lines', 
+                name='Espectro',
+                line=dict(color='rgb(31, 119, 180)', width=1.5)
+            ))
 
+            # Se tiver baseline, adicionamos a linha dela; senão, criamos um limite zero para a faixa
             if tipo_baseline != "Sem baseline":
                 fig.add_trace(go.Scatter(
                     x=wn_band, y=baseline,
-                    mode='lines', name=f'Baseline ({tipo_baseline})',
-                    line=dict(dash='dash')
+                    mode='lines', 
+                    name=f'Baseline ({tipo_baseline})',
+                    line=dict(dash='dash', color='gray', width=2)
+                ))
+            else:
+                fig.add_trace(go.Scatter(
+                    x=wn_band, y=np.zeros_like(wn_band),
+                    mode='lines', 
+                    name='Linha Base Zero',
+                    line=dict(color='rgba(0,0,0,0)'),
+                    showlegend=False
                 ))
 
+            # 2. Área integrada (preenche estritamente no intervalo selecionado utilizando tonexty)
             fig.add_trace(go.Scatter(
                 x=wn_band, y=abs_band,
-                mode='lines', fill='tonexty',
-                name='Área integrada', opacity=0.3
+                mode='lines', 
+                fill='tonexty',
+                name='Área integrada',
+                line=dict(color='rgb(31, 119, 180)', width=2),
+                fillcolor='rgba(135, 206, 250, 0.4)'
             ))
 
             fig.update_layout(
